@@ -32,6 +32,9 @@ text {
         
         <label>Choose a label file: </label>
         <input type="file" id="lblFile" name="labelFile">
+        
+        <label>Choose a legend label file: </label>
+        <input type="file" id="legendFile" name="legendFile">
 
         <input type="submit" id="btnSubmit">
     <!-- </form> -->
@@ -40,6 +43,7 @@ text {
         let rawData, 
             data, 
             labels = {},
+            legend = {},
             diameter = 770,
             radius = diameter / 2,
             innerRadius = radius - 370,
@@ -65,10 +69,27 @@ text {
             // Read in the file as a data URL.
             reader.readAsDataURL(f);
         })
+        d3.select("#legendFile").on("change", function () {
+            var f = event.target.files[0]
+            var reader = new FileReader();
+
+            reader.onload = function(event) {
+                load_legend(event.target.result)
+            };
+            // Read in the file as a data URL.
+            reader.readAsDataURL(f);
+        })
+
 
         function load_label(fileHandler) {
             d3.json(fileHandler).then(data =>{
                 labels = data
+            });
+        }
+
+        function load_legend(fileHandler) {
+            d3.json(fileHandler).then(data =>{
+                legend = data
             });
         }
 
@@ -129,7 +150,7 @@ text {
                     .text(d => d.data.name.replace(/_/g, " "));
 
 
-            // showLegend();
+            showLegend();
 
             // Set the radius of each node by recursively summing and scaling the distance from the root.
             function setRadius(d, y0, k) {
@@ -173,14 +194,14 @@ text {
 
             function showLegend() {
                 const g = legend_g.selectAll("g")
-                            .data(color.domain())
+                            .data(Object.keys(legend))
                             .join("g")
                                 .attr("transform", (d, i) => `translate(0,${10+(i) * 20})`);
 
                 g.append("rect")
                     .attr("width", 18)
                     .attr("height", 18)
-                    .attr("fill", color);
+                    .attr("fill", d => legend[d]);
 
                 g.append("text")
                     .attr("class", "legendLabel")
