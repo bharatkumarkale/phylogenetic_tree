@@ -110,6 +110,8 @@ text {
         d3.select("#btnSubmit").on("click", function () {
             var reg=/^#([0-9a-f]{3}){1,2}$/i;
 
+            d3.select("svg").remove()
+
             let lineStroke = `#${d3.select("#lineColor").node().value}`;
             if(!reg.test(lineStroke))
                 lineStroke = '#aaaaaa'
