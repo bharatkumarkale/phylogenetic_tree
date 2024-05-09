@@ -51,7 +51,8 @@ text {
             diameter = 770,
             radius = diameter / 2,
             innerRadius = radius - 370,
-            padding = 20;
+            padding = 20
+            label_band_width = 50;
 
         d3.select("#treeFile").on("change", function () {
             var f = event.target.files[0]
@@ -125,7 +126,7 @@ text {
                         .attr("transform", `translate(${diameter-40},${0})`);
 
             let cluster = d3.cluster()
-                            .size([360, radius-20])
+                            .size([360, radius-padding-label_band_width])
                             .separation((a, b) => 1),
                 color = d3.scaleOrdinal()
                         .domain(["Alpha", "Gamma", 'Delta', 'Epsilon', 'Omicron', 'Original strain', 'Generated', 'Other', 'Not annotated'])
@@ -154,7 +155,7 @@ text {
                 .data(root.leaves())
                 .join("text")
                     .attr("dy", ".31em")
-                    .attr("transform", d => `rotate(${d.x - 90}) translate(${radius-20 + 2},0)${d.x < 180 ? "" : " rotate(180)"}`)
+                    .attr("transform", d => `rotate(${d.x - 90}) translate(${radius-padding-label_band_width + 2},0)${d.x < 180 ? "" : " rotate(180)"}`)
                     .attr("text-anchor", d => d.x < 180 ? "start" : "end")
                     .attr("fill", d => d.color)
                     .text(d => d.data.name.replace(/_/g, " "));

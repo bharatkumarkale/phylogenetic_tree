@@ -1,0 +1,63 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <title>Graph of Graphs</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script type="text/javascript" src="https://cdn.rawgit.com/arose/ngl/v0.10.3/dist/ngl.js"></script>
+    <link rel='stylesheet' type='text/css' href="{% static "css/style.css" %}">
+</head>
+<body>
+    <div id="controlBar">
+        <div id="subBar1" class="subControlBar">
+            <div class="controlGroup">
+                <label class="controlBarText">Tree file </label>
+                <input type="file" id="treeFile" name="treeFile">
+            </div>
+            
+            <div class="controlGroup">
+                <label class="controlBarText">Node label file </label>
+                <input type="file" id="lblFile" name="labelFile">
+            </div>
+            
+            <div class="controlGroup">
+                <label class="controlBarText">Legend label file </label>
+                <input type="file" id="legendFile" name="legendFile">
+            </div>
+
+            <div class="controlGroup">
+                <label class="controlBarText">Branch color </label>
+                <input type="text" id="lineColor" placeholder="aaaaaa" name="lineColor" size="10" style="align-self: flex-start">
+            </div>
+        </div>
+        <div id="subBar2" class="subControlBar">
+            <input type="submit" id="btnSubmit" style="align-self: flex-start">
+        </div>
+
+    </div>
+    
+    <div id="canvas">
+        <div id="treeCanvas">
+        </div>
+        <div id="subCanvas">
+            <div id="subView1"></div>
+            <div id="subView2">
+                <div id="subView2A">
+                    <div id="subView2A1"></div>
+                    <div id="subView2A2" class="sync_hor_div"></div>
+                </div>
+                <div id="subView2B">
+                    <div id="subView2B1" class="sync_ver_div"></div>
+                    <div id="subView2B2" class="sync_ver_div sync_hor_div"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script type="text/javascript" src="{% static 'js/display.js' %}"></script>
+</body>
+</html>
