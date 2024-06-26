@@ -39,6 +39,7 @@ let data = [],
     msaLblConservationViewG,
     msaLblConservationViewWidth,
     msaLblConservationViewHeight,
+    msaLblConservationViewAxis,
     pie = d3.pie().value(d => d.v),
     pie_data = [],
     arc = d3.arc()
@@ -105,7 +106,7 @@ function init() {
                         .attr("height", msaViewHeight);
 
     msaViewG = msaViewSVG.append("g")
-                        .attr("transform", `translate(${0.01*msaViewWidth},${0.01*msaViewHeight})`);
+                        .attr("transform", `translate(${0.01*msaViewWidth},${0.001*msaViewHeight})`);
 
     msaLblViewEle = d3.select(`#${msaLblViewID}`);
     msaLblViewWidth = msaLblViewEle.node().getBoundingClientRect().width;
@@ -116,7 +117,7 @@ function init() {
                         .attr("height", msaLblViewHeight);
 
     msaLblViewG = msaLblViewSVG.append("g")
-                        .attr("transform", `translate(${0.01*msaLblViewWidth},${0.01*msaLblViewHeight})`);
+                        .attr("transform", `translate(${0.01*msaLblViewWidth},${0.001*msaLblViewHeight})`);
 
     msaLblConservationViewEle = d3.select(`#${msaLblConservationViewID}`);
     msaLblConservationViewWidth = msaLblConservationViewEle.node().getBoundingClientRect().width;
@@ -129,6 +130,8 @@ function init() {
     msaLblConservationViewG = msaLblConservationViewSVG.append("g")
                         .attr("transform", `translate(${0.01*msaLblConservationViewWidth},${0.01*msaLblConservationViewHeight})`);
 
+    msaLblConservationViewAxis = msaLblConservationViewSVG.append("g")
+                                    .attr("class", "msaConservationViewXAxis");
 }
 
 d3.select("#treeFile").on("change", function () {
@@ -498,6 +501,8 @@ function updateMSA(msa_data) {
     let msa_conservation_xScale = d3.scaleBand()
                                     .domain(Array.from(Array(msa_conservation_data.length).keys()))
                                     .range([0,view_width-0.01*msaViewWidth]).paddingOuter(0.01),
+        msa_conservation_startY = 0.01*msaLblConservationViewHeight,
+        msa_conservation_endY = msa_conservation_startY+0.8*msaLblConservationViewHeight,
         msa_conservation_fontYScale = d3.scaleLinear().range([3,20]).domain([0, msa_data.length]),
         msa_conservation_fontXScale = d3.scaleLinear().range([5,1]).domain([0, msa_data.length]);
     msaLblConservationViewG.selectAll(".msa_conservation_ele").each(function(d,j) {
@@ -514,7 +519,7 @@ function updateMSA(msa_data) {
         })
         msa_conservation_yScale
             .domain([0, stackData.slice(-1)[0][1]])
-            .range([0.01*msaLblConservationViewHeight,0.99*msaLblConservationViewHeight]);
+            .range([msa_conservation_startY,msa_conservation_endY]);
 
         sel.selectAll(`.ltrs_conservation_rect_${j}`)
             .data(conservation_data)
@@ -550,6 +555,10 @@ function updateMSA(msa_data) {
                 .each(updateFontSize);
         
     })
+
+    msaLblConservationViewAxis.attr("transform", `translate(${0.01*msaLblConservationViewWidth},${msa_conservation_endY})`)
+        .call(d3.axisBottom(msa_conservation_xScale)
+                .tickValues(msa_conservation_xScale.domain().filter((item) => item%5==0)));
 
     function updateFontSize(d) {
         const l = d3.select(this);
