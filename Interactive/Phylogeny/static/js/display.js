@@ -12,7 +12,7 @@ let data = [],
     margin = {l:0, r:0, t:0, b:0},
     diameter,
     radius,
-    padding = 20,
+    padding = 5,
     label_band_width = 60,
 
     targetSubView1ID = 'subView1',
@@ -185,6 +185,7 @@ function load_tree(fileHandler) {
 function parseNewick(a){for(var e=[],r={},s=a.split(/\s*(;|\(|\)|,|:)\s*/),t=0;t<s.length;t++){var n=s[t];switch(n){case"(":var c={};r.branchset=[c],e.push(r),r=c;break;case",":var c={};e[e.length-1].branchset.push(c),r=c;break;case")":r=e.pop();break;case":":break;default:var h=s[t-1];")"==h||"("==h||","==h?r.name=n:":"==h&&(r.length=parseFloat(n))}}return r}
 
 d3.select("#btnSubmit").on("click", function () {
+
     var reg=/^#([0-9a-f]{3}){1,2}$/i;
 
     // d3.select("svg").remove()
@@ -213,7 +214,7 @@ d3.select("#btnSubmit").on("click", function () {
         .join("path")
             .each(function(d) { d.target.linkNode = this; })
             .attr("class", 'treeBranch')
-            .attr("d", linkConstant)
+            .attr("d", d3.select('#chkMaintainLength').property('checked') ? linkVariable : linkConstant)
             .attr("stroke", d => d.target.color)
             .on("mouseover", function(e,d) {
                 d3.select(this).style("cursor", "pointer"); 
@@ -229,7 +230,7 @@ d3.select("#btnSubmit").on("click", function () {
         .join("text")
             .attr("dy", ".31em")
             .attr("class", "nodeLabel")
-            .attr("transform", d => `rotate(${d.x - 90}) translate(${radius-padding-label_band_width + 2},0)${d.x < 180 ? "" : " rotate(180)"}`)
+            .attr("transform", d => `rotate(${d.x - 90}) translate(${radius-label_band_width},0)${d.x < 180 ? "" : " rotate(180)"}`)
             .attr("text-anchor", d => d.x < 180 ? "start" : "end")
             .attr("fill", d => d.color)
             .text(d => d.data.name.replace(/_/g, " "));
@@ -275,6 +276,17 @@ d3.select("#btnSubmit").on("click", function () {
         + (endAngle === startAngle ? "" : "A" + startRadius + "," + startRadius + " 0 0 " + (endAngle > startAngle ? 1 : 0) + " " + startRadius * c1 + "," + startRadius * s1)
         + "L" + endRadius * c1 + "," + endRadius * s1;
     }
+
+    d3.select('#chkMaintainLength').on("change", function () {
+        const t = d3.transition().duration(750);
+        d3.selectAll('.treeBranch').transition(t).attr('d', d3.select('#chkMaintainLength').property('checked') ? linkVariable : linkConstant);
+        d3.selectAll('.nodeLabel').transition(t).attr("transform", (d) => {
+            if (d3.select('#chkMaintainLength').property('checked')) {
+                return `rotate(${d.x - 90}) translate(${d.radius+padding},0)${d.x < 180 ? "" : " rotate(180)"}`;
+            }
+            return `rotate(${d.x - 90}) translate(${radius-label_band_width},0)${d.x < 180 ? "" : " rotate(180)"}`;
+        })
+    })
 
     function showLegend() {
         const g = legendG.selectAll("g")
