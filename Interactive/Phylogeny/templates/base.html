@@ -22,12 +22,7 @@
                 </div>
                 
                 <div class="controlGroup">
-                    <label class="controlBarText">Node label file </label>
-                    <input type="file" id="lblFile" name="labelFile">
-                </div>
-                
-                <div class="controlGroup">
-                    <label class="controlBarText">Legend label file </label>
+                    <label class="controlBarText">Legend file </label>
                     <input type="file" id="legendFile" name="legendFile">
                 </div>
 
@@ -37,13 +32,23 @@
                 </div>
             </div>
             <div id="subBar2" class="subControlBar">
-                <input type="submit" id="btnSubmit" style="align-self: flex-start">
+                <!-- <div class="controlGroup">
+                    <input type="submit" id="btnSubmit" style="align-self: flex-start">
+                </div> -->
+                <div class="controlGroup">
+                    <input type="checkbox" id="chkMaintainLength">
+                    <label class="chkLbl controlBarText">Maintain True Branch Length</label>
+                </div>
+                <div class="controlGroup">
+                    <input type="checkbox" id="chkRadial" checked>
+                    <label class="chkLbl controlBarText">Use Radial</label>
+                </div>
             </div>
         </div>
-        <div id="optionsControlBar" class="subControlBar">
+        <!-- <div id="optionsControlBar" class="subControlBar">
             <input type="checkbox" id="chkMaintainLength">
             <label class="controlBarText">Maintain True Branch Length</label>
-        </div>
+        </div> -->
     </div>
     
     <div id="canvas">

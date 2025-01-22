@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Phylogenetic Tree</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    .link {
+      fill: none;
+      stroke: #ccc;
+      stroke-width: 2px;
+    }
+
+    .node text {
+      font-size: 10px;
+      font-family: Arial, sans-serif;
+      text-anchor: start;
+    }
+
+    .node circle {
+      fill: #fff;
+      stroke: #000;
+      stroke-width: 1.5px;
+    }
+
+    .highlightNode {
+        color: #FA8072;
+        fill: #FA8072;
+        font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <svg width="900" height="850"></svg>
+  <script>
+    // Define the data structure (modify as needed)
+    let data = [],
+        highlightNodes = ["SyntheticMDH_223_66", "SyntheticMDH_134_38", "SyntheticMDH_1011_77", 
+                          "SyntheticMDH_647_53", "NP_417703", "yntheticMDH_459_62", "CAB97430", 
+                          "CCE24885"];
+
+    function parseNewick(a){
+        for(var e=[],r={},s=a.split(/\s*(;|\(|\)|,|:)\s*/),t=0;t<s.length;t++){
+            var n=s[t];
+            switch(n){
+                case"(":
+                    var c={};
+                    r.children=[c],e.push(r),r=c;
+                    break;
+                case",":
+                    var c={};
+                    e[e.length-1].children.push(c),r=c;
+                    break;
+                case")":
+                    r=e.pop();
+                    break;
+                case":":
+                    break;
+                default:
+                    var h=s[t-1];
+                    ")"==h||"("==h||"," == h ? r.name=n : ":"==h&&(r.length=parseFloat(n))    
+            }
+        }
+        return r;
+    }
+
+    d3.text('./data/2024-10-30_MDH_prot.tree').then(d =>{
+        data = parseNewick(d);
+        const width = 900;
+        const height = 820;
+
+        const svg = d3.select("svg")
+                        .attr("width", width)
+                        .attr("height", height);
+
+        const ele = svg.append('g')
+                        .attr("transform", "translate(5,5)")
+
+        const root = d3.hierarchy(data);
+        const treeLayout = d3.cluster().size([height, width/2 - 100]);
+        treeLayout(root);
+
+        ele.selectAll(".link")
+            .data(root.links())
+            .join("path")
+                .attr("class", "link")
+                .attr("d", line);
+
+        const node = ele.selectAll(".node")
+                        .data(root.descendants())
+                        .join("g")
+                            .attr("class", "node")
+                            .attr("transform", d => `translate(${d.y},${d.x})`);
+
+        node.append("circle")
+        .attr("r", d => d.children ? 1 : 0);
+
+        node.append("text")
+            .attr("dy", 3)
+            .attr("class", d => highlightNodes.includes(d.data.name) ? "nodeText highlightNode" : "nodeText")
+            .attr("x", d => d.children ? -8 : 4)
+            .text(d => d.children ? "" : d.data.name);
+        console.log(d3.selectAll('.nodeText'), d3.selectAll('.highlightNode'))
+    });
+
+    function line(d) {
+        return "M" + d.source.y + "," + d.source.x
+            + "L" + d.source.y + "," + d.target.x
+            + " " + d.target.y + "," + d.target.x;
+    }
+  </script>
+</body>
+</html>

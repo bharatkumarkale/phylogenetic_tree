@@ -1,0 +1,15 @@
+{
+    "ExperimentalFit": {
+        "color": "#377eb8",
+        "nodes": []
+    }, 
+    "ExperimentalUnfit": {
+        "color": "#ff7f00",
+        "nodes": []
+    }, "GeneratedFit": {
+        "color": "#4daf4a",
+        "nodes": []
+    }, "GeneratedUnfit": {
+        "color": "#ffff33",
+        "nodes": []
+    }}

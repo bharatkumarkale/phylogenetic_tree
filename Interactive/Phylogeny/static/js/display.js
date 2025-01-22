@@ -1,4 +1,5 @@
 let data = [],
+    root = null,
     labels = {},
     legend = {},
     targetID = 'treeCanvas',
@@ -12,8 +13,10 @@ let data = [],
     margin = {l:0, r:0, t:0, b:0},
     diameter,
     radius,
-    padding = 5,
-    label_band_width = 60,
+    padding = 2.5,
+    label_band_width = 40,
+    defaultStrokeColor = '#aaaaaa',
+    useRadial = true,
 
     targetSubView1ID = 'subView1',
     targetSubView1Ele,
@@ -61,26 +64,28 @@ function init() {
     totalWidth = targetEle.node().getBoundingClientRect().width;
     totalHeight = targetEle.node().getBoundingClientRect().height;
     margin = {  
-                l:totalWidth*0.05, 
-                r:totalWidth*0.05, 
-                t:totalHeight*0.05, 
-                b:totalHeight*0.05
+                l:totalWidth*0.01, 
+                r:totalWidth*0.01, 
+                t:totalHeight*0.01, 
+                b:totalHeight*0.01
             };
     width = totalWidth-margin.l-margin.r;
     height = totalHeight-margin.t-margin.b;
+
     diameter = width>height ? height:width;
-    radius = 0.55*diameter;
+    radius = 0.6*diameter;
     label_band_width = radius/4;
 
     targetSVG = targetEle.append("svg")
-                    .attr("width", totalWidth)
-                    .attr("height", totalHeight);
+                        .attr("width", totalWidth)
+                        .attr("height", totalHeight);
 
     targetG = targetSVG.append("g")
-                    .attr("transform", `translate(${radius},${radius})`);
+                .attr("class", "baseG")
+                .attr("transform", `translate(${diameter/2},${diameter/2})`);
 
     legendG = targetSVG.append("g")
-                .attr("transform", `translate(${0.85*width},${0})`);
+                .attr("transform", `translate(${0.78*width},${0})`);   
 
     targetSubView1Ele = d3.select(`#${targetSubView1ID}`);
     targetSubView1Width = targetSubView1Ele.node().getBoundingClientRect().width;
@@ -139,71 +144,74 @@ d3.select("#treeFile").on("change", function () {
     var reader = new FileReader();
 
     reader.onload = function(event) {
-        load_tree(event.target.result)
+        load_treeFile(event.target.result);
     };
     // Read in the file as a data URL.
     reader.readAsDataURL(f);
 })
-d3.select("#lblFile").on("change", function () {
-    var f = event.target.files[0]
-    var reader = new FileReader();
 
-    reader.onload = function(event) {
-        load_label(event.target.result)
-    };
-    // Read in the file as a data URL.
-    reader.readAsDataURL(f);
-})
 d3.select("#legendFile").on("change", function () {
     var f = event.target.files[0]
     var reader = new FileReader();
 
     reader.onload = function(event) {
-        load_legend(event.target.result)
+        load_legendFile(event.target.result)
     };
     // Read in the file as a data URL.
     reader.readAsDataURL(f);
 })
 
+function load_legendFile(fileHandler) {
+    d3.json(fileHandler).then(data =>{
+        // legend = data
+        Object.keys(data).forEach(d => {
+            legend[d] = data[d]['color'];
+            data[d]['nodes'].forEach(n => {
+                labels[n] = data[d]['color'];
+            })
+        });
+        setColor(root);
+        updateTree();
+        showLegend();
+    });
+}
 
-function load_label(fileHandler) {
-    d3.json(fileHandler).then(data =>{
-        labels = data
-    });
-}
-function load_legend(fileHandler) {
-    d3.json(fileHandler).then(data =>{
-        legend = data
-    });
-}
-function load_tree(fileHandler) {
+function load_treeFile(fileHandler) {
     d3.text(fileHandler).then(d =>{
         data = parseNewick(d);
+        displayTree();
     });
 }
 
 function parseNewick(a){for(var e=[],r={},s=a.split(/\s*(;|\(|\)|,|:)\s*/),t=0;t<s.length;t++){var n=s[t];switch(n){case"(":var c={};r.branchset=[c],e.push(r),r=c;break;case",":var c={};e[e.length-1].branchset.push(c),r=c;break;case")":r=e.pop();break;case":":break;default:var h=s[t-1];")"==h||"("==h||","==h?r.name=n:":"==h&&(r.length=parseFloat(n))}}return r}
 
 d3.select("#btnSubmit").on("click", function () {
+});
 
+function displayTree() {
     var reg=/^#([0-9a-f]{3}){1,2}$/i;
-
-    // d3.select("svg").remove()
 
     let lineStroke = `#${d3.select("#lineColor").node().value}`;
     if(!reg.test(lineStroke))
-        lineStroke = '#aaaaaa'
+        lineStroke = defaultStrokeColor;
 
-    let cluster = d3.cluster()
-                    .size([360, radius-padding-label_band_width])
-                    .separation((a, b) => 1); 
+    let cluster = d3.cluster();
 
-    const root = d3.hierarchy(data, d => d.branchset)
+    if (useRadial) {
+        cluster.size([360, radius-padding-label_band_width])
+                .separation((a, b) => 1); 
+    } else {
+        cluster.size([totalHeight, 0.7*totalWidth - label_band_width]);
+    }
+
+    root = d3.hierarchy(data, d => d.branchset)
                 .sum(d => d.branchset ? 0 : 1)
                 .sort((a, b) => (a.value - b.value) || d3.ascending(a.data.length, b.data.length));
 
     cluster(root);
-    setRadius(root, root.data.length = 0, radius / maxLength(root));
+    if (useRadial) {
+        setRadius(root, root.data.length = 0, radius / maxLength(root));   
+    }    
     setColor(root);
 
     targetG.append("g")
@@ -230,44 +238,79 @@ d3.select("#btnSubmit").on("click", function () {
         .join("text")
             .attr("dy", ".31em")
             .attr("class", "nodeLabel")
-            .attr("transform", d => `rotate(${d.x - 90}) translate(${radius-label_band_width},0)${d.x < 180 ? "" : " rotate(180)"}`)
-            .attr("text-anchor", d => d.x < 180 ? "start" : "end")
+            .attr("transform", d => {
+                    if (useRadial) {
+                        return `rotate(${d.x - 90}) translate(${radius-label_band_width},0)${d.x < 180 ? "" : " rotate(180)"}`
+                    } else {
+                        return `translate(${d.y+5},${d.x})`
+                    } 
+                })
+            .attr("text-anchor", d => {
+                if (useRadial) {
+                    return d.x < 180 ? "start" : "end";                    
+                } else {
+                    return "start";
+                }
+            })
             .attr("fill", d => d.color)
             .text(d => d.data.name.replace(/_/g, " "));
 
     showLegend();
+    
+}
 
-    // Set the radius of each node by recursively summing and scaling the distance from the root.
-    function setRadius(d, y0, k) {
-        d.radius = (y0 += d.data.length) * k;
-        if (d.children) d.children.forEach(d => setRadius(d, y0, k));
-    }
+function updateTree() {
+    targetG.selectAll(".nodeLabel")
+        .attr("fill", d => d.color);
+    
+    targetG.selectAll(".treeBranch")
+        .attr("stroke", d => d.target.color);
+    
+}
 
-    // Set the color of each node by recursively inheriting.
-    function setColor(d) {
-        let name = d.data.name;
-            d.color = labels[name];
-        if (d.children) d.children.forEach(setColor);
-    }
+// Set the radius of each node by recursively summing and scaling the distance from the root.
+function setRadius(d, y0, k) {
+    d.radius = (y0 += d.data.length) * k;
+    if (d.children) d.children.forEach(d => setRadius(d, y0, k));
+}
 
-    // Compute the maximum cumulative length of any node in the tree.
-    function maxLength(d) {
-        return d.data.length + (d.children ? d3.max(d.children, maxLength) : 0);
-    }
+// Set the color of each node by recursively inheriting.
+function setColor(d) {
+    let name = d.data.name;
+        d.color = labels[name];
+    if (d.children) d.children.forEach(setColor);
+}
 
-    function linkExtensionConstant(d) {
-        return linkStep(d.target.x, d.target.y, d.target.x, radius);
-    }
+// Compute the maximum cumulative length of any node in the tree.
+function maxLength(d) {
+    return d.data.length + (d.children ? d3.max(d.children, maxLength) : 0);
+}
 
-    function linkConstant(d) {
+function linkExtensionConstant(d) {
+    return linkStep(d.target.x, d.target.y, d.target.x, radius);
+}
+
+function linkConstant(d) {
+    if (useRadial) {
         return linkStep(d.source.x, d.source.y, d.target.x, d.target.y);
-    }
+    } else {
+        return "M" + d.source.y + "," + d.source.x
+            + "L" + d.source.y + "," + d.target.x
+            + " " + d.target.y + "," + d.target.x;
+    } 
+}
 
-    function linkVariable(d) {
+function linkVariable(d) {
+    if (useRadial) {
         return linkStep(d.source.x, d.source.radius, d.target.x, d.target.radius);
-    }
+    } else {
+        return "M" + d.source.y + "," + d.source.x
+            + "L" + d.source.y + "," + d.target.x
+            + " " + d.target.y + "," + d.target.x;
+    } 
+}
 
-    function linkStep(startAngle, startRadius, endAngle, endRadius) {
+function linkStep(startAngle, startRadius, endAngle, endRadius) {
     const c0 = Math.cos(startAngle = (startAngle - 90) / 180 * Math.PI);
     const s0 = Math.sin(startAngle);
     const c1 = Math.cos(endAngle = (endAngle - 90) / 180 * Math.PI);
@@ -275,48 +318,68 @@ d3.select("#btnSubmit").on("click", function () {
     return "M" + startRadius * c0 + "," + startRadius * s0
         + (endAngle === startAngle ? "" : "A" + startRadius + "," + startRadius + " 0 0 " + (endAngle > startAngle ? 1 : 0) + " " + startRadius * c1 + "," + startRadius * s1)
         + "L" + endRadius * c1 + "," + endRadius * s1;
-    }
+}
 
-    d3.select('#chkMaintainLength').on("change", function () {
-        const t = d3.transition().duration(750);
-        d3.selectAll('.treeBranch').transition(t).attr('d', d3.select('#chkMaintainLength').property('checked') ? linkVariable : linkConstant);
-        d3.selectAll('.nodeLabel').transition(t).attr("transform", (d) => {
-            if (d3.select('#chkMaintainLength').property('checked')) {
-                return `rotate(${d.x - 90}) translate(${d.radius+padding},0)${d.x < 180 ? "" : " rotate(180)"}`;
+function showLegend() {
+    const g = legendG.selectAll("g")
+                .data(Object.keys(legend))
+                .join("g")
+                    .attr("transform", (d, i) => `translate(0,${10+(i) * 20})`);
+
+    g.append("rect")
+        .attr("width", 18)
+        .attr("height", 18)
+        .attr("fill", d => legend[d]);
+
+    g.append("text")
+        .attr("class", "legendLabel")
+        .attr("x", 24)
+        .attr("y", 9)
+        .attr("dy", "0.35em")
+        .text(d => {
+            if (d.includes('ExperimentalF')) {
+                return `${d} (EF)`;
+            } else if (d.includes('ExperimentalUnf')) {
+                return `${d} (EU)`;
+            } else if (d.includes('GeneratedF')) {
+                return `${d} (GF)`;
+            } else if (d.includes('GeneratedUnf')) {
+                return `${d} (GU)`;
             }
-            return `rotate(${d.x - 90}) translate(${radius-label_band_width},0)${d.x < 180 ? "" : " rotate(180)"}`;
-        })
+        });
+}
+
+d3.select('#lineColor').on('mouseout', function () {
+    defaultStrokeColor = `#${d3.select(this).property("value")}`;
+    console.log(defaultStrokeColor);
+})
+
+d3.select('#chkMaintainLength').on("change", function () {
+    const t = d3.transition().duration(750);
+    d3.selectAll('.treeBranch').transition(t).attr('d', d3.select('#chkMaintainLength').property('checked') ? linkVariable : linkConstant);
+    d3.selectAll('.nodeLabel').transition(t).attr("transform", (d) => {
+        if (d3.select('#chkMaintainLength').property('checked')) {
+            return `rotate(${d.x - 90}) translate(${d.radius+padding},0)${d.x < 180 ? "" : " rotate(180)"}`;
+        }
+        return `rotate(${d.x - 90}) translate(${radius-label_band_width},0)${d.x < 180 ? "" : " rotate(180)"}`;
     })
+})
 
-    function showLegend() {
-        const g = legendG.selectAll("g")
-                    .data(Object.keys(legend))
-                    .join("g")
-                        .attr("transform", (d, i) => `translate(0,${10+(i) * 20})`);
+d3.select('#chkRadial').on("change", function () {
+    useRadial = !useRadial
 
-        g.append("rect")
-            .attr("width", 18)
-            .attr("height", 18)
-            .attr("fill", d => legend[d]);
+    targetSVG.select('.baseG').remove();
 
-        g.append("text")
-            .attr("class", "legendLabel")
-            .attr("x", 24)
-            .attr("y", 9)
-            .attr("dy", "0.35em")
-            .text(d => {
-                if (d.includes('ExperimentalF')) {
-                    return `${d} (EF)`;
-                } else if (d.includes('ExperimentalUnf')) {
-                    return `${d} (EU)`;
-                } else if (d.includes('GeneratedF')) {
-                    return `${d} (GF)`;
-                } else if (d.includes('GeneratedUnf')) {
-                    return `${d} (GU)`;
-                }
-            });
+    if (useRadial) {
+        targetG = targetSVG.append("g")
+                .attr("class", "baseG")
+                .attr("transform", `translate(${diameter/2},${diameter/2})`)
+    } else {
+        targetG = targetSVG.append("g")
+                .attr("class", "baseG")
+                .attr("transform", `translate(5,5)`);
     }
-    
+    displayTree();
 })
 
 function branchClicked(e,d) {
