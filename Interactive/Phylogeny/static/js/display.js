@@ -242,7 +242,7 @@ function displayTree() {
                     if (useRadial) {
                         return `rotate(${d.x - 90}) translate(${radius-label_band_width},0)${d.x < 180 ? "" : " rotate(180)"}`
                     } else {
-                        return `translate(${d.y+5},${d.x})`
+                        return `translate(${d.y},${d.x})`
                     } 
                 })
             .attr("text-anchor", d => {
@@ -377,7 +377,7 @@ d3.select('#chkRadial').on("change", function () {
     } else {
         targetG = targetSVG.append("g")
                 .attr("class", "baseG")
-                .attr("transform", `translate(5,5)`);
+                .attr("transform", `translate(${margin.l},${margin.t})`);
     }
     displayTree();
 })
