@@ -17,6 +17,7 @@ let data = [],
     label_band_width = 40,
     defaultStrokeColor = '#aaaaaa',
     useRadial = true,
+    maintainBranchLength = false,
 
     targetSubView1ID = 'subView1',
     targetSubView1Ele,
@@ -211,7 +212,9 @@ function displayTree() {
     cluster(root);
     if (useRadial) {
         setRadius(root, root.data.length = 0, radius / maxLength(root));   
-    }    
+    } else {
+        setRadius(root, root.data.length = 0, 0.7*totalWidth / maxLength(root));
+    }
     setColor(root);
 
     targetG.append("g")
@@ -222,7 +225,7 @@ function displayTree() {
         .join("path")
             .each(function(d) { d.target.linkNode = this; })
             .attr("class", 'treeBranch')
-            .attr("d", d3.select('#chkMaintainLength').property('checked') ? linkVariable : linkConstant)
+            .attr("d", maintainBranchLength ? linkVariable : linkConstant)
             .attr("stroke", d => d.target.color)
             .on("mouseover", function(e,d) {
                 d3.select(this).style("cursor", "pointer"); 
@@ -240,9 +243,15 @@ function displayTree() {
             .attr("class", "nodeLabel")
             .attr("transform", d => {
                     if (useRadial) {
-                        return `rotate(${d.x - 90}) translate(${radius-label_band_width},0)${d.x < 180 ? "" : " rotate(180)"}`
+                        if (maintainBranchLength) {
+                            return `rotate(${d.x - 90}) translate(${d.radius+padding},0)${d.x < 180 ? "" : " rotate(180)"}`;
+                        }
+                        return `rotate(${d.x - 90}) translate(${radius-label_band_width},0)${d.x < 180 ? "" : " rotate(180)"}`;
                     } else {
-                        return `translate(${d.y},${d.x})`
+                        if (maintainBranchLength) {
+                            return `translate(${d.radius+padding},${d.x})`;
+                        }
+                        return `translate(${d.y},${d.x})`;
                     } 
                 })
             .attr("text-anchor", d => {
@@ -265,6 +274,25 @@ function updateTree() {
     
     targetG.selectAll(".treeBranch")
         .attr("stroke", d => d.target.color);
+
+    const t = d3.transition().duration(750);
+    if (useRadial) {
+        d3.selectAll('.treeBranch').transition(t).attr('d', maintainBranchLength ? linkVariable : linkConstant);
+        d3.selectAll('.nodeLabel').transition(t).attr("transform", (d) => {
+            if (maintainBranchLength) {
+                return `rotate(${d.x - 90}) translate(${d.radius+padding},0)${d.x < 180 ? "" : " rotate(180)"}`;
+            }
+            return `rotate(${d.x - 90}) translate(${radius-label_band_width},0)${d.x < 180 ? "" : " rotate(180)"}`;
+        })
+    } else {
+        d3.selectAll('.treeBranch').transition(t).attr('d', maintainBranchLength ? linkVariable : linkConstant);
+        d3.selectAll('.nodeLabel').transition(t).attr("transform", (d) => {
+            if (maintainBranchLength) {
+                return `translate(${d.radius+padding},${d.x})`;
+            }
+            return `translate(${d.y},${d.x})`;
+        })
+    }
     
 }
 
@@ -304,9 +332,9 @@ function linkVariable(d) {
     if (useRadial) {
         return linkStep(d.source.x, d.source.radius, d.target.x, d.target.radius);
     } else {
-        return "M" + d.source.y + "," + d.source.x
-            + "L" + d.source.y + "," + d.target.x
-            + " " + d.target.y + "," + d.target.x;
+        return "M" + d.source.radius + "," + d.source.x
+            + "L" + d.source.radius + "," + d.target.x
+            + " " + d.target.radius + "," + d.target.x;
     } 
 }
 
@@ -355,14 +383,8 @@ d3.select('#lineColor').on('mouseout', function () {
 })
 
 d3.select('#chkMaintainLength').on("change", function () {
-    const t = d3.transition().duration(750);
-    d3.selectAll('.treeBranch').transition(t).attr('d', d3.select('#chkMaintainLength').property('checked') ? linkVariable : linkConstant);
-    d3.selectAll('.nodeLabel').transition(t).attr("transform", (d) => {
-        if (d3.select('#chkMaintainLength').property('checked')) {
-            return `rotate(${d.x - 90}) translate(${d.radius+padding},0)${d.x < 180 ? "" : " rotate(180)"}`;
-        }
-        return `rotate(${d.x - 90}) translate(${radius-label_band_width},0)${d.x < 180 ? "" : " rotate(180)"}`;
-    })
+    maintainBranchLength = d3.select('#chkMaintainLength').property('checked');
+    updateTree();
 })
 
 d3.select('#chkRadial').on("change", function () {
